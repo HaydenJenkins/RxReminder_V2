@@ -71,9 +71,22 @@ function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+<<<<<<< HEAD
+=======
+  cell: {
+    borderColor: 'red',
+    borderWidth: 2,
+    margin: 10,
+    height: 150,
+    width: '90%',
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+>>>>>>> 859d823113656359fbabf15da8ebb09ac9432027
   container: {
     flex: 1,
-    backgroundColor: 'red',
+    backgroundColor: '#EAF2E3',
   },
   rowContainer: {
     flex: 1,
@@ -88,7 +101,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    margin: 10,
+    marginLeft: 10,
+    marginRight: 10,
+    marginTop: 60,
+    marginBottom: 10,
   },
   graphCell: {
     borderColor: 'red',
