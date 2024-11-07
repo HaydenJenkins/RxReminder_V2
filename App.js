@@ -1,25 +1,16 @@
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState, useRef } from 'react';
-import { Alert, 
-  Button, 
-  FlatList, 
+import { 
   Image, 
-  Modal,
   Platform,
-  TextInput,
-  TouchableOpacity, 
-  SafeAreaView, 
-  ScrollView, 
-  StyleSheet, 
-  Switch, 
-  Text, 
-  View } from 'react-native';
+  SafeAreaView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { NavigationContainer, DrawerActions } from '@react-navigation/native';
 import { GestureHandlerRootView, PanGestureHandler } from 'react-native-gesture-handler';
-
-import { Avatar, Card, IconButton, MD3Colors } from 'react-native-paper';
 
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
@@ -29,6 +20,31 @@ import AccountScreen from './app/screens/AccountScreen';
 import CalendarScreen from './app/screens/CalendarScreen';
 import HomeScreen from './app/screens/HomeScreen';
 
+import { NotificationProvider } from './app/contexts/NotificationContext';
+
+import { TabBar, TabView, SceneMap } from 'react-native-tab-view';
+
+import { BlurView } from 'expo-blur';
+
+// Modular SDK import (version 9+)
+import { initializeApp } from 'firebase/app';
+import { addDoc, collection, getFirestore } from 'firebase/firestore';
+
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+async function testAddAlarm() {
+  try {
+    const docRef = await addDoc(collection(db, "alarms"), {
+      time: 'Test:test PM'
+    });
+    console.log("Document written with ID: ", docRef.id);
+  } catch (e) {
+    console.error("Error adding document: ", e);
+  }
+}
 
 
 const LogoTitle = () => {
@@ -61,6 +77,41 @@ const DrawerNavigator = () => (
   </Drawer.Navigator>
 );
 
+const renderScene = SceneMap({
+  first: HomeScreen,
+  second: CalendarScreen,
+});
+
+const routes = [
+  { key: 'first', title: 'Home' },
+  { key: 'second', title: 'Calendar' },
+];
+
+const renderTabBar = props => (
+  // <TabBar
+  //   {...props}
+  //   indicatorStyle={{ backgroundColor: 'red' }}
+  //   style={{ backgroundColor: 'rgba(97, 232, 225, 0.5)', position: 'absolute' }}
+  //   activeColor='blue'
+  //   inactiveColor='white'
+  // />
+  <View style={styles.tabBarWrapper}>
+    <BlurView
+      style={StyleSheet.absoluteFill}
+      blurType="light" 
+      blurAmount={10} 
+      reducedTransparencyFallbackColor="rgba(97, 232, 225, 0.5)"
+    />
+    <TabBar
+      {...props}
+      indicatorStyle={{ backgroundColor: 'silver' }}
+      style={styles.tabBar}
+      activeColor="gray"
+      inactiveColor="lightgray"
+    />
+  </View>
+);
+
 const MainScreen = () => {
 
   return (
@@ -77,7 +128,7 @@ Notifications.setNotificationHandler({
   }),
 });
 
-async function schedulePushNotification( time ) {
+async function scheduleAlarmPushNotification( time ) {
   //cancel all scheduled notifications
   //await Notifications.cancelAllScheduledNotificationsAsync();
 
@@ -96,10 +147,8 @@ async function schedulePushNotification( time ) {
       },
     },
     trigger: { 
-      hour: 12,
-      //time.hour   make time prop passed an object with hour and minute fields
-      minute: 47,
-      //time.minute
+      hour: time.hour,
+      minute: time.minute,
       //repeats: true,
     },
   });
@@ -178,6 +227,8 @@ export default function App() {
   const notificationListener = useRef();
   const responseListener = useRef();
 
+  const [index, setIndex] = useState(0);
+
   useEffect(() => {
     registerForPushNotificationsAsync().then(token => token && setExpoPushToken(token));
 
@@ -213,33 +264,36 @@ export default function App() {
   }, []);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <NavigationContainer>
-        <MainScreen />
-        <Button
-        title="Press to schedule a notification"
-        onPress={async () => {
-          await schedulePushNotification();
-        }}
-      />
-      </NavigationContainer>
-    </GestureHandlerRootView>
+    <NotificationProvider value={{ scheduleAlarmPushNotification, testAddAlarm }}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaView style={styles.container}>
+          <TabView
+            navigationState={{ index, routes }}
+            renderScene={renderScene}
+            renderTabBar={renderTabBar}
+            onIndexChange={setIndex}
+          />
+        </SafeAreaView>
+      </GestureHandlerRootView>
+    </NotificationProvider>
   );
 }
 
 
 const styles = StyleSheet.create({
-  deleteButton: {
-    backgroundColor: "#e74c3c",
-    paddingVertical: 5,
-    paddingHorizontal: 15,
-    borderRadius: 5,
+  container: {
+    flex: 1,
+    backgroundColor: '#EAF2E3',
   },
-  deleteText: {
-    color: "white",
-    fontSize: 16,
+  tabBar: {
+    backgroundColor: 'transparent', // Make sure the TabBar itself is transparent
   },
-  pillIcon: {
-    fontSize: 18,
+  tabBarWrapper: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 50, // Adjust as needed
+    zIndex: 1,
   },
 });

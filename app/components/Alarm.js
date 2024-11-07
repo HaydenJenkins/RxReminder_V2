@@ -1,19 +1,21 @@
+import { useEffect, useState, } from 'react';
 import {
   Alert,
   Button,
   Modal,
   Text,
-  TextInput,
+  
   TouchableOpacity,
   StyleSheet,
   Switch,
   View,
 } from "react-native";
-import { useEffect, useState, } from 'react';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { IconButton } from "react-native-paper";
+import { IconButton, TextInput } from "react-native-paper";
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { FlatList } from "react-native-gesture-handler";
+
+import { useNotification } from '../contexts/NotificationContext';
 
 function Alarm() {
   const [isEnabled, setIsEnabled] = useState(false);
@@ -23,6 +25,8 @@ function Alarm() {
 
   const [medicationList, setMedicationList] = useState([]);
   const [text, setText] = useState('');
+
+  const { scheduleAlarmPushNotification, testAddAlarm } = useNotification();
 
   //const toggleSwitch = () => setIsEnabled(previousState => !previousState);
   const toggleSwitch = (id) => {
@@ -51,6 +55,7 @@ function Alarm() {
   const confirmTime = () => {
     setAlarms(prevAlarms => [...prevAlarms, { id: Date.now(), time: pendingTime, medications: medicationList, switchEnabled: true }]); // Add the pending time to alarms
     hideTimePickerModal();
+    console.log(alarms);
   };
 
   const deleteAlarm = (alarmId) => {
@@ -146,6 +151,8 @@ function Alarm() {
         size={50}
         onPress={showTimePickerModal}
       />
+      <Button title='schedule notif' onPress={() => {scheduleAlarmPushNotification({hour: 12, minute: 43})}} />
+      <Button title='test alarm db add' onPress={() => {testAddAlarm()}} />
       <Modal
         transparent={true}
         animationType="fade"
@@ -165,10 +172,14 @@ function Alarm() {
             <TextInput 
               style={styles.input}
               onChangeText={setText}
-              placeholder='Enter medications ("," seperated)'
               value={text}
+              label='Medications'
+              mode='outlined'
+              selectionColor='green'
+              outlineColor='blue'
+              activeOutlineColor='red'
             />
-            <Button title="Confirm" onPress={() => {confirmTime(); changeMeds()}} />
+            <Button title="Confirm" onPress={() => {changeMeds(); confirmTime();}} />
             <Button title="Close" onPress={hideTimePickerModal} />
           </View>
         </View>
@@ -226,12 +237,7 @@ const styles = StyleSheet.create({
   input: {
     height: 40,
     width: 200,
-    margin: 12,
-    borderWidth: 2,
-    borderRadius: 5,
-    borderColor: 'silver',
-    padding: 10,
-    color: 'black',
+    margin: 10,
   },
   medicationsContainer: {
     //padding: 10

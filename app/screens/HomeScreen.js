@@ -52,7 +52,6 @@ function HomeScreen() {
 
 const styles = StyleSheet.create({
   cell: {
-    
     borderColor: 'red',
     borderWidth: 2,
     margin: 10,
@@ -64,7 +63,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: 'red',
+    backgroundColor: '#EAF2E3',
   },
   row: {
     flexDirection: 'row',
@@ -83,7 +82,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    margin: 10,
+    marginLeft: 10,
+    marginRight: 10,
+    marginTop: 60,
+    marginBottom: 10,
   },
   alarmContainer: {
     flex: 1,
