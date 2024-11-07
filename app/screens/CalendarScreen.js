@@ -18,7 +18,7 @@ function CalendarScreen() {
             '2024-10-25': {endingDay: true, color: '#50cebb', textColor: 'white'}
           }}
           onDayPress={(day) => console.log(day)}
-          style={{borderRadius: 5, backgroundColor: '#F2E863'}}
+          style={{borderRadius: 45, backgroundColor: '#F2E863', paddingLeft: -10, paddingRight: -10}}
         />
       </View>
       <View>

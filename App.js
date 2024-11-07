@@ -26,26 +26,6 @@ import { TabBar, TabView, SceneMap } from 'react-native-tab-view';
 
 import { BlurView } from 'expo-blur';
 
-// Modular SDK import (version 9+)
-import { initializeApp } from 'firebase/app';
-import { addDoc, collection, getFirestore } from 'firebase/firestore';
-
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-async function testAddAlarm() {
-  try {
-    const docRef = await addDoc(collection(db, "alarms"), {
-      time: 'Test:test PM'
-    });
-    console.log("Document written with ID: ", docRef.id);
-  } catch (e) {
-    console.error("Error adding document: ", e);
-  }
-}
-
 
 const LogoTitle = () => {
   return (
@@ -264,7 +244,7 @@ export default function App() {
   }, []);
 
   return (
-    <NotificationProvider value={{ scheduleAlarmPushNotification, testAddAlarm }}>
+    <NotificationProvider value={{ scheduleAlarmPushNotification }}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaView style={styles.container}>
           <TabView

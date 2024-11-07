@@ -4,7 +4,6 @@ import {
   Button,
   Modal,
   Text,
-  
   TouchableOpacity,
   StyleSheet,
   Switch,
@@ -17,6 +16,8 @@ import { FlatList } from "react-native-gesture-handler";
 
 import { useNotification } from '../contexts/NotificationContext';
 
+import { testAddAlarm, testReadAlarm } from '../database/firebaseFunctions';
+
 function Alarm() {
   const [isEnabled, setIsEnabled] = useState(false);
   const [alarms, setAlarms] = useState([]); // Array of alarms
@@ -26,7 +27,7 @@ function Alarm() {
   const [medicationList, setMedicationList] = useState([]);
   const [text, setText] = useState('');
 
-  const { scheduleAlarmPushNotification, testAddAlarm } = useNotification();
+  const { scheduleAlarmPushNotification } = useNotification();
 
   //const toggleSwitch = () => setIsEnabled(previousState => !previousState);
   const toggleSwitch = (id) => {
@@ -153,6 +154,7 @@ function Alarm() {
       />
       <Button title='schedule notif' onPress={() => {scheduleAlarmPushNotification({hour: 12, minute: 43})}} />
       <Button title='test alarm db add' onPress={() => {testAddAlarm()}} />
+      <Button title='test alarm db read' onPress={() => {testReadAlarm()}} />
       <Modal
         transparent={true}
         animationType="fade"
