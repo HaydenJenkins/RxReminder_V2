@@ -27,7 +27,7 @@ const renderItem = ({ index }) => {
         <View style={styles.graphCell}>
           <DotGraph 
             dotSize={3}
-            points={[{ x: 100, y: 150 }]}  // Example points, can be dynamic                     
+            points={[{ x: 100, y: 150 }]}                  
           />
         </View>
       </View>
@@ -61,7 +61,7 @@ function HomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <FlatList
-        style={{ backgroundColor: '#EAF2E3' }}
+        style={{ backgroundColor: 'white' }}
         data={data}
         renderItem={renderItem}
         keyExtractor={(item, index) => index.toString()}
@@ -71,8 +71,6 @@ function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-<<<<<<< HEAD
-=======
   cell: {
     borderColor: 'red',
     borderWidth: 2,
@@ -83,7 +81,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
->>>>>>> 859d823113656359fbabf15da8ebb09ac9432027
   container: {
     flex: 1,
     backgroundColor: '#EAF2E3',
@@ -94,21 +91,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   alarmCell: {
-    borderColor: 'red',
-    borderWidth: 2,
+    borderColor: 'lightgray',
+    borderWidth: 1,
     height: 400,
     width: '90%',
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 10,
+    marginLeft: 20,
     marginRight: 10,
-    marginTop: 60,
+    marginTop: 50,
     marginBottom: 10,
   },
   graphCell: {
-    borderColor: 'red',
-    borderWidth: 2,
+    borderColor: 'lightgray',
+    borderWidth: 1,
     height: 350,
     width: '90%',
     borderRadius: 10,
@@ -117,20 +114,20 @@ const styles = StyleSheet.create({
     margin: 10,
   },
   bmiCell: {
-    borderColor: 'red',
-    borderWidth: 2,
-    height: 500, // Set this to fit the BMI component comfortably
+    borderColor: 'lightgray',
+    borderWidth: 1,
+    height: 200,
     width: '90%',
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     margin: 10,
-    overflow: 'hidden', // Ensure content stays within bounds
+    overflow: 'hidden',
   },
   healthCell: {
-    borderColor: 'red',
-    borderWidth: 2,
-    height: 300, // Adjusted height for HealthInfoInput component
+    borderColor: 'lightgray',
+    borderWidth: 1,
+    height: 300,
     width: '90%',
     borderRadius: 10,
     alignItems: 'center',

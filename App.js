@@ -1,4 +1,3 @@
-import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState, useRef } from 'react';
 import { 
   Image, 
@@ -6,17 +5,21 @@ import {
   SafeAreaView,
   StyleSheet,
   View,
+  Text,
 } from 'react-native';
-import { createStackNavigator } from '@react-navigation/stack';
-import { createDrawerNavigator } from '@react-navigation/drawer';
-import { NavigationContainer, DrawerActions } from '@react-navigation/native';
+
 import { GestureHandlerRootView, PanGestureHandler } from 'react-native-gesture-handler';
+
+import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
+
 
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 
-import AccountScreen from './app/screens/AccountScreen';
+import { createDrawerNavigator, DrawerToggleButton } from '@react-navigation/drawer';
+
+
 import CalendarScreen from './app/screens/CalendarScreen';
 import HomeScreen from './app/screens/HomeScreen';
 
@@ -25,6 +28,10 @@ import { NotificationProvider } from './app/contexts/NotificationContext';
 import { TabBar, TabView, SceneMap } from 'react-native-tab-view';
 
 import { BlurView } from 'expo-blur';
+
+import { db } from './app/database/firebaseConfig';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { NavigationContainer } from '@react-navigation/native';
 
 
 const LogoTitle = () => {
@@ -44,23 +51,73 @@ const LogoTitle = () => {
 //   </Stack.Navigator>
 // );
 
+const CustomHeader = ({ title }) => (
+  <View style={styles.headerWrapper}>
+    <BlurView
+      style={StyleSheet.absoluteFill}
+      blurType="light"
+      blurAmount={10}
+      reducedTransparencyFallbackColor="rgba(97, 232, 225, 0.5)"
+    />
+    <View style={styles.headerContent}>
+      {/* <DrawerToggleButton onPress={() => navigation.toggleDrawer()} /> */}
+      <Text style={styles.headerTitle}>{title}</Text>
+    </View>
+  </View>
+);
+
 const Drawer = createDrawerNavigator();
 const DrawerNavigator = () => (
   <Drawer.Navigator screenOptions={{
-    drawerStyle: { backgroundColor: '#F2CD60', width: 200 },
+    drawerStyle: { backgroundColor: '#C5E6FB', width: 200 },
     gestureEnabled: true,
     swipeEdgeWidth: 1000,
   }} >
-    <Drawer.Screen name='Home' component={HomeScreen} options={{ headerTitle: () => <LogoTitle />, headerStyle: {backgroundColor: '#61E8E1'}, headerTintColor: '#3498db', drawerLabel: () => <LogoTitle /> }}/>
-    <Drawer.Screen name='Calendar' component={CalendarScreen} options={{ headerStyle: {backgroundColor: '#61E8E1'}, headerTintColor: '#3498db' }}/>
-    <Drawer.Screen name='Account' component={AccountScreen} options={{ headerStyle: {backgroundColor: '#61E8E1'}, headerTintColor: '#3498db' }}/>
+    <Drawer.Screen 
+      name='Home' 
+      component={HomeScreen} 
+      options={{
+        header: () => <CustomHeader title="Home" />,
+        headerStyle: { backgroundColor: '#61E8E1' },
+        headerTintColor: '#3498db',
+        //drawerLabel: () => <LogoTitle />,
+      }} 
+    />
+    <Drawer.Screen 
+      name='Calendar' 
+      component={CalendarScreen}
+      options={{
+        header: () => <CustomHeader title="Calendar" />,
+        headerStyle: { backgroundColor: '#61E8E1' },
+        headerTintColor: '#3498db',
+        //drawerLabel: () => <LogoTitle />,
+      }} 
+    />
   </Drawer.Navigator>
 );
 
-const renderScene = SceneMap({
-  first: HomeScreen,
-  second: CalendarScreen,
-});
+// const renderScene = ({ route }) => {
+//   if (route.key === 'first') {
+//     console.log('Rendering CalendarScreen');
+//     return <CalendarScreen />;
+//   } else if (route.key === 'second') {
+//     console.log('Rendering HomeScreen');
+//     return <HomeScreen />;
+//   }
+//   return null;
+// };
+
+
+const Tab = createMaterialTopTabNavigator();
+
+const MyTabs = () => {
+  return (
+    <Tab.Navigator>
+      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Calendar" component={CalendarScreen} />
+    </Tab.Navigator>
+  );
+};
 
 const routes = [
   { key: 'first', title: 'Home' },
@@ -96,7 +153,6 @@ const MainScreen = () => {
 
   return (
     <DrawerNavigator />
-    //<StackNavigator />
   );
 }
 
@@ -108,47 +164,91 @@ Notifications.setNotificationHandler({
   }),
 });
 
-async function scheduleAlarmPushNotification( time ) {
-  //cancel all scheduled notifications
-  //await Notifications.cancelAllScheduledNotificationsAsync();
-
-  //cancel specific notification using passed ID
-  //await Notifications.cancelScheduledNotificationAsync(notificationId);
-
-  await Notifications.scheduleNotificationAsync({
+async function scheduleAlarmPushNotification(time, id) {
+  const notificationID = await Notifications.scheduleNotificationAsync({
     content: {
       title: "RxReminder",                                 
-      body: `Time To Take ${time} Medication(s)`,
+      body: `Time To Take ${time.getHours()}:${time.getMinutes()} Medication(s)`,
       data: { 
-        data: 'goes here', 
-        test: { 
-          test1: 'more data' 
-        } 
+        alarmId: id,
       },
     },
     trigger: { 
-      hour: time.hour,
-      minute: time.minute,
-      //repeats: true,
+      hour: time.getHours(),
+      minute: time.getMinutes(),
+      repeats: true,
     },
   });
+
+  console.log('notif iD: ', notificationID);
+
   listScheduledNotifications();
+
+  return notificationID;
 }
 
-// Function to get and log all scheduled notifications
+async function deleteAlarmPushNotifications(id) {
+  let notifID = '';
+
+  try {
+    const docRef = doc(db, 'alarms', id);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      notifID = docSnap.data().notificationID;
+      await Notifications.cancelScheduledNotificationAsync(notifID);
+      console.log('deleted notification from schedular on alarm delete')
+    } else {
+      console.log('snapshot for notificationID does not exist')
+    }
+    listScheduledNotifications();
+  } catch (e) {
+    console.log('failed to delete notification on alarm delete')
+  }
+}
+
+async function removeAlarmPushNotificationOnToggle(id, switchEnabled) {
+  let notifID = '';
+
+  try {
+    const docRef = doc(db, 'alarms', id);
+    const docSnap = await getDoc(docRef);
+    console.log('in remove func');
+
+    if (docSnap.exists()) {
+      notifID = docSnap.data().notificationID;
+      await Notifications.cancelScheduledNotificationAsync(notifID);
+      console.log('deleted notification from schedular on alarm toggle');
+      await updateDoc(docRef, {
+        notificationID: null,
+        switchEnabled: !switchEnabled,
+      });
+      console.log(`Alarm notification id at ${id} updated successfully`)
+    } else {
+      console.log('snapshot for notificationID does not exist');
+    }
+    listScheduledNotifications();
+  } catch (e) {
+    console.log('failed to delete notification on alarm toggle');
+  }
+}
+
 async function listScheduledNotifications() {
   try {
     const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
     console.log('Scheduled Notifications:', scheduledNotifications);
 
-    // Extract and save identifiers
     const notificationIds = scheduledNotifications.map(({ identifier }) => identifier);
     
-    // Save these IDs for later use (e.g., state or variable)
     console.log('Notification IDs:', notificationIds);
   } catch (error) {
     console.error('Error fetching scheduled notifications:', error);
   }
+}
+
+async function clearNotifications() {
+  await Notifications.cancelAllScheduledNotificationsAsync();
+  listScheduledNotifications();
 }
 
 async function registerForPushNotificationsAsync() {
@@ -199,7 +299,6 @@ async function registerForPushNotificationsAsync() {
   return token;
 }
 
-
 export default function App() {
   const [expoPushToken, setExpoPushToken] = useState('');
   const [channels, setChannels] = useState([]);
@@ -207,25 +306,11 @@ export default function App() {
   const notificationListener = useRef();
   const responseListener = useRef();
 
-  const [index, setIndex] = useState(0);
-
   useEffect(() => {
     registerForPushNotificationsAsync().then(token => token && setExpoPushToken(token));
 
     if (Platform.OS === 'android') {
-      Notifications.getNotificationChannelsAsync()
-        .then((value) => {
-          // Add a check to ensure we handle undefined or null values
-          if (value && Array.isArray(value)) {
-            setChannels(value); // Only set if it's a valid array
-          } else {
-            setChannels([]); // Fallback to an empty array
-          }
-        })
-        .catch((error) => {
-          console.error('Error fetching notification channels', error);
-          setChannels([]); // Ensure an empty array in case of error
-        });
+      Notifications.getNotificationChannelsAsync().then(value => setChannels(value ?? []));
     }
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
       setNotification(notification);
@@ -244,17 +329,17 @@ export default function App() {
   }, []);
 
   return (
-    <NotificationProvider value={{ scheduleAlarmPushNotification }}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <SafeAreaView style={styles.container}>
-          <TabView
-            navigationState={{ index, routes }}
-            renderScene={renderScene}
-            renderTabBar={renderTabBar}
-            onIndexChange={setIndex}
-          />
-        </SafeAreaView>
-      </GestureHandlerRootView>
+    <NotificationProvider value={{ clearNotifications, listScheduledNotifications, deleteAlarmPushNotifications, removeAlarmPushNotificationOnToggle, scheduleAlarmPushNotification }}>
+      
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <NavigationContainer>
+            <SafeAreaView style={styles.container}>
+              <MainScreen />
+            </SafeAreaView>
+          </NavigationContainer>
+          
+        </GestureHandlerRootView>
+      
     </NotificationProvider>
   );
 }
@@ -263,17 +348,35 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#EAF2E3',
+    backgroundColor: 'white',
   },
   tabBar: {
-    backgroundColor: 'transparent', // Make sure the TabBar itself is transparent
+    backgroundColor: 'transparent',
   },
   tabBarWrapper: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: 50, // Adjust as needed
+    height: 50,
     zIndex: 1,
+  },
+  headerWrapper: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 50,
+    zIndex: 1,
+  },
+  headerContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    color: '#072AC8',
+    fontSize: 20,
+    fontWeight: 'bold',
   },
 });

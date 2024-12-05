@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Button, Alert, Modal, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Button, Alert, Modal, TouchableOpacity } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Card, TextInput } from 'react-native-paper';
 
 const HealthInfoInput = () => {
-  // State for input fields
   const [modalVisible, setModalVisible] = useState(false);
   const [systolic, setSystolic] = useState('');
   const [diastolic, setDiastolic] = useState('');
@@ -12,7 +12,6 @@ const HealthInfoInput = () => {
   const [heartRate, setHeartRate] = useState('');
   const [bloodType, setBloodType] = useState('');
 
-  // Function to handle submission of the form
   const handleSubmit = () => {
     if (!systolic || !diastolic || !bloodSugar || !heartRate || !bloodType) {
       Alert.alert('Error', 'Please fill all fields');
@@ -22,109 +21,140 @@ const HealthInfoInput = () => {
       'Success',
       `Blood Type: ${bloodType}, Blood Pressure: ${systolic}/${diastolic}, Blood Sugar: ${bloodSugar}, Peak Heart Rate: ${heartRate}`
     );
-    setModalVisible(false); // Close modal on successful submit
+    setModalVisible(false); 
   };
 
   const handleOpenModal = () => {
-    setModalVisible(true); // Open modal explicitly
+    setModalVisible(true); 
   };
 
   const handleCloseModal = () => {
-    setModalVisible(false); // Close modal explicitly
+    setModalVisible(false); 
   };
 
   return (
     <View style={styles.container}>
-      {/* Display Information */}
-      <View style={styles.infoContainer}>
-        <Text style={styles.infoText}>Blood Type: {bloodType || "N/A"}</Text>
-        <Text style={styles.infoText}>Blood Pressure: {systolic || "N/A"} / {diastolic || "N/A"}</Text>
-        <Text style={styles.infoText}>Blood Sugar: {bloodSugar || "N/A"} mg/dL</Text>
-        <Text style={styles.infoText}>Peak Heart Rate: {heartRate || "N/A"} BPM</Text>
-      </View>
-
-      {/* Plus Icon to Open Modal */}
       <TouchableOpacity style={styles.plusIcon} onPress={handleOpenModal}>
-        <MaterialCommunityIcons name="plus" size={30} color="#3498db" />
+        <MaterialCommunityIcons name="plus" size={35} color="#072AC8" />
       </TouchableOpacity>
-
-      {/* Modal for Editing Health Info */}
+      <View style={styles.bubblesContainer}>
+        <Card style={[styles.infoContainer, {backgroundColor: '#1E96FC'}]}>
+          <Card.Content>
+            <Text style={[styles.infoText, {color: 'white'}]}>Blood Type: {bloodType || "N/A"}</Text>
+          </Card.Content>
+        </Card>
+        <Card style={[styles.infoContainer, {backgroundColor: '#A2D6F9'}]}>
+          <Card.Content>
+            <Text style={[styles.infoText, {color: 'white'}]}>Blood Pressure: {systolic || "N/A"} / {diastolic || "N/A"}</Text>
+          </Card.Content>
+        </Card>
+        <Card style={[styles.infoContainer, {backgroundColor: '#FCF300'}]}>
+          <Card.Content>
+          <Text style={[styles.infoText, {color: 'gray'}]}>Blood Sugar: {bloodSugar || "N/A"} mg/dL</Text>
+          </Card.Content>
+        </Card>
+        <Card style={[styles.infoContainer, {backgroundColor: '#FFC600'}]}>
+          <Card.Content>
+          <Text style={[styles.infoText, {color: 'gray'}]}>Peak Heart Rate: {heartRate || "N/A"} BPM</Text>
+          </Card.Content>
+        </Card>
+      </View>
+      
       <Modal
         transparent={true}
-        animationType="slide"
+        animationType="fade"
         visible={modalVisible}
       >
         <View style={styles.modalBackground}>
           <View style={styles.modalContent}>
-            {/* Input Fields for Modal */}
-            <View style={styles.row}>
-              <View style={styles.inputContainer}>
-                <Text style={styles.secondaryLabel}>Peak Heart Rate (BPM)</Text>
-                <TextInput
-                  style={styles.secondaryInput}
-                  placeholder="Enter peak heart rate"
-                  keyboardType="numeric"
-                  value={heartRate}
-                  onChangeText={setHeartRate}
-                />
+
+            <View style={styles.modalContainer}>
+              <View style={{width: 180, alignItems: 'center', justifyContent: 'center', paddingLeft: 5}}>
+                <View style={styles.inputContainer}>
+                  <Text style={styles.secondaryLabel}>Peak Heart Rate (BPM)</Text>
+                  <TextInput
+                    style={styles.secondaryInput}
+                    label="Peak BPM"
+                    keyboardType="numeric"
+                    placeholderTextColor={'red'}
+                    value={heartRate}
+                    onChangeText={setHeartRate}
+                    mode='outlined'
+                selectionColor='dodgerblue'
+                outlineColor='black'
+                activeOutlineColor='dodgerblue'
+                  />
+                  <Text style={styles.primaryLabel}>Blood Pressure</Text>
+                  <View style={styles.bpContainer}>
+                    <TextInput
+                      style={styles.primaryInput}
+                      label="Systolic"
+                      keyboardType="numeric"
+                      placeholderTextColor={'red'}
+                      value={systolic}
+                      onChangeText={setSystolic}
+                      mode='outlined'
+                selectionColor='dodgerblue'
+                outlineColor='black'
+                activeOutlineColor='dodgerblue'
+                    />
+                    <TextInput
+                      style={styles.primaryInput}
+                      label="Diastolic"
+                      keyboardType="numeric"
+                      placeholderTextColor={'red'}
+                      value={diastolic}
+                      onChangeText={setDiastolic}
+                      mode='outlined'
+                selectionColor='dodgerblue'
+                outlineColor='black'
+                activeOutlineColor='dodgerblue'
+                    />
+                  </View>
+                  <View style={[styles.inputContainer, {marginBottom: 50}]}>
+                    <Text style={styles.secondaryLabel}>Blood Sugar (mg/dL)</Text>
+                    <TextInput
+                      style={styles.secondaryInput}
+                      label="Blood Sugar"
+                      placeholderTextColor={'red'}
+                      keyboardType="numeric"
+                      value={bloodSugar}
+                      onChangeText={setBloodSugar}
+                      mode='outlined'
+                selectionColor='dodgerblue'
+                outlineColor='black'
+                activeOutlineColor='dodgerblue'
+                    />
+                  </View> 
+                </View>
               </View>
-              <View style={styles.inputContainer}>
-                <Text style={styles.secondaryLabel}>Blood Type</Text>
-                <View style={styles.pickerContainer}>
-                  <Picker
-                    selectedValue={bloodType}
-                    style={styles.picker}
-                    onValueChange={(itemValue) => setBloodType(itemValue)}
-                  >
-                    <Picker.Item label="Select Blood Type" value="" />
-                    <Picker.Item label="A+" value="A+" />
-                    <Picker.Item label="A-" value="A-" />
-                    <Picker.Item label="B+" value="B+" />
-                    <Picker.Item label="B-" value="B-" />
-                    <Picker.Item label="AB+" value="AB+" />
-                    <Picker.Item label="AB-" value="AB-" />
-                    <Picker.Item label="O+" value="O+" />
-                    <Picker.Item label="O-" value="O-" />
-                  </Picker>
+              <View style={{width: 150, alignItems: 'center', justifyContent: 'center', marginLeft: 10}}>
+                <View style={styles.inputContainer}>
+                  <Text style={styles.secondaryLabel}>Blood Type</Text>
+                  <View style={styles.pickerContainer}>
+                    <Picker
+                      selectedValue={bloodType}
+                      style={styles.picker}
+                      onValueChange={(itemValue) => setBloodType(itemValue)}
+                      itemStyle={{color: 'red'}}
+                    >
+                      <Picker.Item label="--" value="" />
+                      <Picker.Item label="A+" value="A+" />
+                      <Picker.Item label="A-" value="A-" />
+                      <Picker.Item label="B+" value="B+" />
+                      <Picker.Item label="B-" value="B-" />
+                      <Picker.Item label="AB+" value="AB+" />
+                      <Picker.Item label="AB-" value="AB-" />
+                      <Picker.Item label="O+" value="O+" />
+                      <Picker.Item label="O-" value="O-" />
+                    </Picker>
+                  </View>
                 </View>
               </View>
             </View>
-            <View style={styles.center}>
-              <Text style={styles.primaryLabel}>Blood Pressure</Text>
-              <View style={styles.bpContainer}>
-                <TextInput
-                  style={styles.primaryInput}
-                  placeholder="Systolic"
-                  keyboardType="numeric"
-                  value={systolic}
-                  onChangeText={setSystolic}
-                />
-                <TextInput
-                  style={styles.primaryInput}
-                  placeholder="Diastolic"
-                  keyboardType="numeric"
-                  value={diastolic}
-                  onChangeText={setDiastolic}
-                />
-              </View>
-            </View>
-            <View style={styles.inputContainer}>
-              <Text style={styles.secondaryLabel}>Blood Sugar (mg/dL)</Text>
-              <TextInput
-                style={styles.secondaryInput}
-                placeholder="Enter blood sugar"
-                keyboardType="numeric"
-                value={bloodSugar}
-                onChangeText={setBloodSugar}
-              />
-            </View>
-
-            {/* Submit and Close Buttons */}
-            <View style={styles.buttonContainer}>
-              <Button title="Submit" color="#3498db" onPress={handleSubmit} />
-            </View>
-            <View style={styles.buttonContainer}>
-              <Button title="Cancel" color="grey" onPress={handleCloseModal} />
+            <Button title="Submit" onPress={handleSubmit} />
+            <View style={{marginBottom: 20}}>
+              <Button title="Cancel" onPress={handleCloseModal} />
             </View>
           </View>
         </View>
@@ -135,25 +165,31 @@ const HealthInfoInput = () => {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
+    paddingTop: 10,
+    paddingRight: 10,
+  },
+  bubblesContainer: {
+    justifyContent: 'space-around',
+    width: '90%',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
   },
   infoContainer: {
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 10,
+    height: 135,
+    width: 135,
+    borderRadius: '50%',
   },
   infoText: {
     fontSize: 16,
-    color: '#333',
-    marginBottom: 5,
     textAlign: 'center',
   },
   plusIcon: {
     position: 'absolute',
-    top: 10,
-    right: 10,
+    top: 5,
+    right: -18,
   },
   modalBackground: {
     flex: 1,
@@ -163,7 +199,6 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: 'white',
-    padding: 20,
     borderRadius: 10,
     width: '90%',
     alignItems: 'center',
@@ -174,61 +209,56 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   inputContainer: {
-    flex: 1,
-    paddingHorizontal: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   primaryLabel: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 5,
+    marginBottom: 10,
+    marginTop: 20,
   },
   primaryInput: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    borderRadius: 5,
-    textAlign: 'center',
+  
     marginBottom: 10,
     fontSize: 14,
-    width: '48%',
+    width: '120',
     backgroundColor: 'white',
   },
   bpContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginBottom: 15,
+    flexDirection: 'column',
+    justifyContent: 'space-around',
   },
   secondaryLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 5,
+    marginBottom: 10,
+    marginTop: 20,
   },
   secondaryInput: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    borderRadius: 5,
-    textAlign: 'center',
-    fontSize: 14,
-    width: '100%',
-    backgroundColor: 'white',
+    width: '120',
   },
   pickerContainer: {
-    borderWidth: 1,
-    borderColor: '#ccc',
     borderRadius: 5,
     backgroundColor: 'white',
+    height: 200,
+    width: 120,
+    marginBottom: 50,
   },
   picker: {
-    height: 40,
     width: '100%',
+    flex: 1,
   },
   buttonContainer: {
     borderRadius: 5,
     overflow: 'hidden',
     marginVertical: 5,
+  },
+  modalContainer: {
+    height: 500,
+    flexDirection: 'row',
+    marginBottom: -20
   },
 });
 

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Button, Alert } from 'react-native';
+import { Modal, View, Text, StyleSheet, Button, Alert, TouchableOpacity } from 'react-native';
+import { TextInput } from 'react-native-paper';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const BodyMetricsInput = () => {
   const [weight, setWeight] = useState('');
@@ -7,6 +9,15 @@ const BodyMetricsInput = () => {
   const [inches, setInches] = useState('');
   const [bodyFat, setBodyFat] = useState('');
   const [bmi, setBmi] = useState('');
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const handleOpenModal = () => {
+    setModalVisible(true); 
+  };
+
+  const handleCloseModal = () => {
+    setModalVisible(false); 
+  };
 
   const calculateBMI = (weight, feet, inches) => {
     if (weight && feet && inches) {
@@ -22,62 +33,96 @@ const BodyMetricsInput = () => {
       return;
     }
 
-    Alert.alert('Success', `Weight: ${weight} lbs, Height: ${feet}ft ${inches}in, Body Fat: ${bodyFat}%, BMI: ${bmi}`);
+    setModalVisible(false);
+    //Alert.alert('Success', `Weight: ${weight} lbs, Height: ${feet}ft ${inches}in, Body Fat: ${bodyFat}%, BMI: ${bmi}`);
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.bmiLabel}>Your BMI</Text>
       <Text style={styles.bmiValue}>{bmi || 'Not calculated yet'}</Text>
-
-      <Text style={styles.label}>Body Fat Percentage (%)</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter body fat percentage"
-        keyboardType="numeric"
-        value={bodyFat}
-        onChangeText={setBodyFat}
-      />
-
-      <Text style={styles.label}>Weight (lbs)</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter weight in lbs"
-        keyboardType="numeric"
-        value={weight}
-        onChangeText={(value) => {
-          setWeight(value);
-          calculateBMI(value, feet, inches);
-        }}
-      />
-
-      <Text style={styles.label}>Height (Feet and Inches)</Text>
-      <View style={styles.heightInputContainer}>
-        <TextInput
-          style={styles.heightInput}
-          placeholder="Feet"
-          keyboardType="numeric"
-          value={feet}
-          onChangeText={(value) => {
-            setFeet(value);
-            calculateBMI(weight, value, inches);
-          }}
-        />
-        <TextInput
-          style={styles.heightInput}
-          placeholder="Inches"
-          keyboardType="numeric"
-          value={inches}
-          onChangeText={(value) => {
-            setInches(value);
-            calculateBMI(weight, feet, value);
-          }}
-        />
+      <View style={styles.prevBmiContainer}>
+        <Text style={styles.prevBmiLabel}>Previous BMI</Text>
+        <Text style={styles.prevBmiValue}>{bmi || '--'}</Text>
       </View>
+      <TouchableOpacity style={styles.plusIcon} onPress={handleOpenModal}>
+        <MaterialCommunityIcons name="plus" size={35} color="#072AC8" />
+      </TouchableOpacity>
 
-      <View style={styles.buttonContainer}>
-        <Button color="#3498db" title="Submit" onPress={handleSubmit} />
-      </View>
+      <Modal
+        transparent={true}
+        animationType="fade"
+        visible={modalVisible}
+      >
+        <View style={styles.modalBackground}>
+          <View style={styles.modalContent}>
+            <Text style={styles.label}>Body Fat Percentage (%)</Text>
+            <TextInput
+              style={styles.input}
+              label="BMI"
+              keyboardType="numeric"
+              value={bodyFat}
+              onChangeText={setBodyFat}
+              mode='outlined'
+              selectionColor='dodgerblue'
+              outlineColor='black'
+              activeOutlineColor='dodgerblue'
+            />
+
+            <Text style={styles.label}>Weight (lbs)</Text>
+            <TextInput
+              style={styles.input}
+              label="Lbs"
+              keyboardType="numeric"
+              value={weight}
+              onChangeText={(value) => {
+                setWeight(value);
+                calculateBMI(value, feet, inches);
+              }}
+              mode='outlined'
+              selectionColor='dodgerblue'
+              outlineColor='black'
+              activeOutlineColor='dodgerblue'
+            />
+
+            <Text style={styles.label}>Height (Feet and Inches)</Text>
+            <View style={styles.heightInputContainer}>
+              <TextInput
+                style={styles.heightInput}
+                label="Ft."
+                keyboardType="numeric"
+                value={feet}
+                onChangeText={(value) => {
+                  setFeet(value);
+                  calculateBMI(weight, value, inches);
+                }}
+                mode='outlined'
+                selectionColor='dodgerblue'
+                outlineColor='black'
+                activeOutlineColor='dodgerblue'
+              />
+              <TextInput
+                style={styles.heightInput}
+                label="In."
+                keyboardType="numeric"
+                value={inches}
+                onChangeText={(value) => {
+                  setInches(value);
+                  calculateBMI(weight, feet, value);
+                }}
+                mode='outlined'
+                selectionColor='dodgerblue'
+                outlineColor='black'
+                activeOutlineColor='dodgerblue'
+              />
+            </View>
+            <View style={styles.buttonContainer}>
+              <Button title="Submit" onPress={handleSubmit} />
+            </View>
+            <Button title="Cancel" onPress={handleCloseModal} />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -85,8 +130,11 @@ const BodyMetricsInput = () => {
 const styles = StyleSheet.create({
   container: {
     padding: 15,
-    backgroundColor: '#EAF2E3',
+    backgroundColor: 'white',
     width: '100%', 
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   bmiLabel: {
     fontSize: 16,
@@ -108,34 +156,55 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 5,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    padding: 8,
-    textAlign: 'center',
-    marginBottom: 15,
-    backgroundColor: 'white',
-  },
   heightInputContainer: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 15,
   },
   heightInput: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    padding: 8,
-    width: '48%',
-    textAlign: 'center',
-    backgroundColor: 'white',
+    margin: 10,
+    width: 80,
   },
   buttonContainer: {
-    borderRadius: 5,
-    overflow: 'hidden',
-    marginTop: 10,
+    marginTop: 20,
   },
+  input: {
+    height: 40,
+    width: 200,
+    marginBottom: 30,
+  },
+  modalBackground: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    width: '90%',
+    alignItems: 'center',
+  },
+  plusIcon: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+  },
+  prevBmiLabel: {
+    color: 'gray',
+  },
+  prevBmiValue: {
+    color: '#ff6347',
+  },
+  prevBmiContainer : {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 150,
+    padding: 10,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 20,
+  }
 });
 
 export default BodyMetricsInput;

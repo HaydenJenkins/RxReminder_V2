@@ -2,7 +2,9 @@ import { useEffect, useState, } from 'react';
 import {
   Alert,
   Button,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Text,
   TouchableOpacity,
   StyleSheet,
@@ -14,32 +16,69 @@ import { IconButton, TextInput } from "react-native-paper";
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { FlatList } from "react-native-gesture-handler";
 
+import uuid from 'react-native-uuid';
+
 import { useNotification } from '../contexts/NotificationContext';
 
-import { testAddAlarm, testReadAlarm } from '../database/firebaseFunctions';
+import { db } from '../database/firebaseConfig';
+import { collection, getDocs, Timestamp, } from 'firebase/firestore';
+import { testAddAlarm, testDeleteAlarm, testUpdateAlarm } from '../database/firebaseFunctions';
 
 function Alarm() {
-  const [isEnabled, setIsEnabled] = useState(false);
-  const [alarms, setAlarms] = useState([]); // Array of alarms
+  const [alarms, setAlarms] = useState([]);
 	const [showTimePicker, setShowTimePicker] = useState(false);
-  const [pendingTime, setPendingTime] = useState(new Date()); // To store the temporary alarm until confirmation
+  const [pendingTime, setPendingTime] = useState(new Date()); 
 
   const [medicationList, setMedicationList] = useState([]);
   const [text, setText] = useState('');
 
-  const { scheduleAlarmPushNotification } = useNotification();
+  const { deleteAlarmPushNotifications, removeAlarmPushNotificationOnToggle, scheduleAlarmPushNotification } = useNotification();
 
-  //const toggleSwitch = () => setIsEnabled(previousState => !previousState);
-  const toggleSwitch = (id) => {
-    setAlarms(prevAlarms =>
-      prevAlarms.map(alarm =>
-        alarm.id === id ? { ...alarm, switchEnabled: !alarm.switchEnabled } : alarm
+
+  useEffect(() => {
+    fetchAlarms();
+  }, []);
+
+  const fetchAlarms = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'alarms'));
+      const fetchedAlarms = querySnapshot.docs.map(doc => {
+        const time = doc.data().time instanceof Timestamp ? doc.data().time.toDate() : doc.data().time;
+
+        return {
+          id: doc.id,
+          ...doc.data(),
+          time, 
+        };
+      });
+      setAlarms(fetchedAlarms);
+    } catch (e) {
+      console.error('Error fetching alarms', e);
+    }
+  };
+
+  const toggleSwitch = async (id, switchEnabled, time) => {
+    setAlarms((prevAlarms) =>
+      prevAlarms.map((alarm) =>
+        alarm.id === id ? { ...alarm, switchEnabled: !switchEnabled } : alarm
       )
     );
+
+    const newNotificationID = uuid.v4();
+
+    if (!switchEnabled) {
+      const notificationID = await scheduleAlarmPushNotification(time, newNotificationID);
+        testUpdateAlarm(id, switchEnabled, notificationID);
+    } else {
+      await removeAlarmPushNotificationOnToggle(id, switchEnabled);
+    }
+
+    fetchAlarms();
   };
 
 	const showTimePickerModal = () => {
-    setPendingTime(new Date()); // Reset the pendingTime when opening the modal
+    setText('');
+    setPendingTime(new Date()); 
 		setShowTimePicker(true);
 	};
 
@@ -49,71 +88,59 @@ function Alarm() {
 
 	const handleTimeChange = (event, newTime) => {
 		if (event.type === "set" && newTime) {
-      setPendingTime(newTime); // Store the selected time temporarily
+      setPendingTime(newTime); 
     }
+    console.log(pendingTime);
 	};
 
-  const confirmTime = () => {
-    setAlarms(prevAlarms => [...prevAlarms, { id: Date.now(), time: pendingTime, medications: medicationList, switchEnabled: true }]); // Add the pending time to alarms
-    hideTimePickerModal();
-    console.log(alarms);
-  };
+  const confirmTime = async () => {
+    const newNotificationID = uuid.v4();
 
-  const deleteAlarm = (alarmId) => {
-    setAlarms(alarms.filter(alarm => alarm.id !== alarmId));
+    const notificationID = await scheduleAlarmPushNotification(pendingTime, newNotificationID);
+    await testAddAlarm(pendingTime, medicationList, true, notificationID);
+    hideTimePickerModal();
+    fetchAlarms(); 
   };
 
   const changeMeds = () => {
-    setMedicationList(text.split(',').map(medication => medication.trim()).filter(medication => medication));
+    const currMedsList = text.split(',').map(medication => medication.trim()).filter(medication => medication);
+    setMedicationList(currMedsList);
   };
 
   const getMedColor = (index) => {
-    const colors = ['#ffc107', '#03a9f4', '#ff5722', '#4caf50', '#9c27b0'];
+    const colors = ['#1E96FC', '#A2D6F9', '#FCF300', '#FFC600'];
     return colors[index % colors.length];
   };
 
-	useEffect(() => {
-    const checkAlarms = setInterval(() => {
-      const currentTime = new Date();
-      alarms.forEach(alarm => {
-        if (
-          currentTime.getHours() === alarm.time.getHours() &&
-          currentTime.getMinutes() === alarm.time.getMinutes()
-        ) {
-          Alert.alert("Alarm", `Alarm at ${alarm.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} is ringing!`);
-          deleteAlarm(alarm.id); // Remove the alarm once it rings
-        }
-      });
-    }, 1000); // Check every second
-
-    return () => clearInterval(checkAlarms); // Cleanup on unmount
-  }, [alarms]);
-
-  const createTwoButtonAlert = () =>
-    Alert.alert('Alert Title', 'My Alert Msg', [
+  const createTwoButtonAlert = (id) =>
+    Alert.alert('Delete Alarm', 'Are you sure you want to delete this Alarm?', [
       {
         text: 'Cancel',
         onPress: () => console.log('Cancel Pressed'),
         style: 'cancel',
       },
-      {text: 'Confirm', onPress: () => console.log('COMFIRMED Pressed')},
+      {
+        text: 'Delete', 
+        onPress: async () => {
+          await deleteAlarmPushNotifications(id)
+          await testDeleteAlarm(id);
+          fetchAlarms();
+        }
+      },
     ]);
 
   const renderAlarmItem = ({ item }) => (
-    <TouchableOpacity onLongPress={createTwoButtonAlert}>
+    <TouchableOpacity onLongPress={() => {createTwoButtonAlert(item.id);}}>
       <View style={styles.alarmItem}>
         <View style={styles.alarmHeader}>
           <Text style={styles.alarmTime}>
             {item.time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
           </Text>
-          {/* <TouchableOpacity onPress={() => deleteAlarm(item.id)} style={styles.deleteButton}>
-            <Text style={styles.deleteText}>Delete</Text>
-          </TouchableOpacity> */}
           <Switch
-            trackColor={{false: '#767577', true: '#81b0ff'}}
-            thumbColor={item.switchEnabled ? '#f5dd4b' : '#f4f3f4'}
-            ios_backgroundColor="#3e3e3e"
-            onValueChange={() => toggleSwitch(item.id)}
+            trackColor={{false: 'lightgray', true: 'chartreuse'}}
+            thumbColor={item.switchEnabled ? 'white' : 'white'}
+            ios_backgroundColor="lightgray"
+            onValueChange={() => {toggleSwitch(item.id, item.switchEnabled, item.time);}}
             value={item.switchEnabled}
           />
         </View>
@@ -127,34 +154,37 @@ function Alarm() {
               index===4 ? {zIndex: 1} : 
               index===5 ? {zIndex: 0} : null ]}>
               <Text style={styles.medicationText}>{med}</Text>
-              <Text style={styles.pillIcon}>💊</Text>
+              {/* <Text style={styles.pillIcon}>💊</Text> */}
             </View>
           ))}
         </View>
       </View>
     </TouchableOpacity>
-    
   );
 
 	return (
 		<View style={styles.container}>
-			{/* <View style={styles.header}>
-				<Text style={styles.appName}>AlarmClock</Text>
-			</View> */}
+      <FlatList
+        data={alarms}
+        renderItem={renderAlarmItem}
+        keyExtractor={item => item.id.toString()}
+        style={styles.alarmList}
+        nestedScrollEnabled={true}
+        contentContainerStyle={{alignItems: 'center'}}
+        showsVerticalScrollIndicator={false}
+      />
       <IconButton 
+        style={styles.plusIcon}
         icon={() => (
           <MaterialCommunityIcons 
             name="plus" 
             size={50} 
-            color={'#3498db'} 
+            color={'white'}
           />
         )}
         size={50}
         onPress={showTimePickerModal}
       />
-      <Button title='schedule notif' onPress={() => {scheduleAlarmPushNotification({hour: 12, minute: 43})}} />
-      <Button title='test alarm db add' onPress={() => {testAddAlarm()}} />
-      <Button title='test alarm db read' onPress={() => {testReadAlarm()}} />
       <Modal
         transparent={true}
         animationType="fade"
@@ -162,7 +192,7 @@ function Alarm() {
         onRequestClose={hideTimePickerModal}
       >
         <View style={styles.modalBackground}>
-          <View style={styles.modalContent}>
+          <KeyboardAvoidingView style={styles.modalContent} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <DateTimePicker
               value={pendingTime}
               mode="time"
@@ -174,6 +204,7 @@ function Alarm() {
             <TextInput 
               style={styles.input}
               onChangeText={setText}
+              onSubmitEditing={changeMeds}
               value={text}
               label='Medications'
               mode='outlined'
@@ -181,25 +212,15 @@ function Alarm() {
               outlineColor='blue'
               activeOutlineColor='red'
             />
-            <Button title="Confirm" onPress={() => {changeMeds(); confirmTime();}} />
-            <Button title="Close" onPress={hideTimePickerModal} />
-          </View>
+            <View style={{marginTop: 10}}>
+              <Button title="Confirm" onPress={() => {confirmTime();}} />
+            </View>
+            <View style={{marginBottom: 10}}>
+              <Button title="Close" onPress={hideTimePickerModal} />
+            </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
-
-      {/* Displaying the list of alarms */}
-
-        <FlatList
-        data={alarms}
-        renderItem={renderAlarmItem}
-        keyExtractor={item => item.id.toString()}
-        style={styles.alarmList}
-        nestedScrollEnabled={true}
-        contentContainerStyle={{alignItems: 'center'}}
-        showsVerticalScrollIndicator={false}
-      />
-
-      
 		</View>
 	);
 }
@@ -209,24 +230,23 @@ const styles = StyleSheet.create({
     margin: 10,
     borderRadius: 10,
     width: 200,
-    //overflow: 'hidden',
-    //backgroundColor: '#f1f1f1',
-    //padding: 5,
   },
   alarmList: {
     marginTop: 10,
     marginBottom: 10,
-    height: "100%",
+    marginLeft: 20,
+    height: "95%",
     width: 300,
   },
   alarmHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 10,
+    padding: 15,
     backgroundColor: '#e0e0e0',
     borderRadius: 10,
     zIndex: 1,
+    marginBottom: 1,
   },
   alarmTime: {
     fontSize: 20,
@@ -234,7 +254,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    alignItems: 'flex-end'
+    flexDirection: 'row'
   },
   input: {
     height: 40,
@@ -242,7 +262,6 @@ const styles = StyleSheet.create({
     margin: 10,
   },
   medicationsContainer: {
-    //padding: 10
   },
   medicationRow: {
     flexDirection: 'row',
@@ -257,6 +276,9 @@ const styles = StyleSheet.create({
   },
   medicationText: {
     fontSize: 16,
+    color: 'black',
+    fontWeight: 'bold',
+    paddingTop: 5,
   },
   modalBackground: {
     flex: 1,
@@ -272,6 +294,13 @@ const styles = StyleSheet.create({
   },
   pillIcon: {
     fontSize: 16,
+    paddingTop: 5,
+  },
+  plusIcon: {
+    backgroundColor: '#072AC8',
+    marginTop: 20,
+    marginRight: 20,
+    marginLeft: 20,
   },
 });
 
